@@ -8,16 +8,34 @@
 
 using namespace Rice;
 
+VALUE rb_eKeychainAuthFailedError;
+VALUE rb_eKeychainError;
+VALUE rb_eKeychainDuplicateItemError;
+VALUE rb_eKeychainNoSuchKeychainError;
+
+VALUE exception_class_for_code(SecKeychainStatus code){
+  switch(code){
+    case errSecAuthFailed:
+      return rb_eKeychainAuthFailedError;
+    case errSecNoSuchKeychain:
+      return rb_eKeychainNoSuchKeychainError;
+    case errSecDuplicateItem:
+      return rb_eKeychainDuplicateItemError;
+    default:
+      return rb_eKeychainError;
+  }
+}
 
 void handle_keychain_exception(KeychainException const &exception){
-  throw Exception(rb_eRuntimeError, "Keychain error %d: %s", exception.m_code,exception.m_message.c_str());
+  Object klass = exception_class_for_code(exception.m_code);
+  Object ruby_exception = klass.call("new", exception.m_message, exception.m_code);
+  throw Exception(ruby_exception);
 }
 
 
 extern "C"
 void Init_keychain_rice(){
   Data_Type<Keychain> rb_cKeychain = 
-
     define_class<Keychain>("Keychain").
         add_handler<KeychainException>(handle_keychain_exception).
         define_singleton_method("default",&Keychain::default_keychain).
@@ -27,7 +45,12 @@ void Init_keychain_rice(){
         define_method("inspect",&Keychain::inspect).
         define_method("lock",&Keychain::lock).
         define_method("delete",&Keychain::destroy).
-        define_method("unlock", &Keychain::unlock, (Arg("password")=Nil));
+        define_method("unlock", &Keychain::unlock, (Arg("password")=Nil)).
+        define_method("status", &Keychain::status);
 
+  rb_eKeychainAuthFailedError = rb_const_get(rb_cKeychain.value(), rb_intern("AuthFailedError"));
+  rb_eKeychainError           = rb_const_get(rb_cKeychain.value(), rb_intern("Error"));
+  rb_eKeychainNoSuchKeychainError = rb_const_get(rb_cKeychain.value(), rb_intern("NoSuchKeychainError"));
+  rb_eKeychainDuplicateItemError = rb_const_get(rb_cKeychain.value(), rb_intern("DuplicateItemError"));
 }
 
