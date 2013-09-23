@@ -119,3 +119,38 @@ void Keychain::destroy(){
   OSStatus result = SecKeychainDelete(m_keychain);
   CheckOSStatusOrRaise(result);
 }
+
+bool Keychain::lock_on_sleep() const{
+  return settings().lockOnSleep;
+}
+
+int  Keychain::lock_interval() const{
+  return settings().lockInterval;
+}
+
+bool Keychain::set_lock_on_sleep(bool newValue){
+  SecKeychainSettings current_settings = settings();
+  current_settings.lockOnSleep = newValue;
+  set_settings(&current_settings);
+  return newValue;
+}
+int Keychain::set_lock_interval(int newValue){
+  SecKeychainSettings current_settings = settings();
+  current_settings.lockInterval = newValue;
+  set_settings(&current_settings);
+  return newValue;
+}
+
+
+SecKeychainSettings Keychain::settings() const{
+  SecKeychainSettings _settings;
+  _settings.version = SEC_KEYCHAIN_SETTINGS_VERS1;
+  OSStatus result = SecKeychainCopySettings(m_keychain, &_settings);
+  CheckOSStatusOrRaise(result);
+  return _settings;
+}
+
+void Keychain::set_settings(SecKeychainSettings *new_settings){
+  OSStatus result = SecKeychainSetSettings(m_keychain, new_settings);
+  CheckOSStatusOrRaise(result);
+}

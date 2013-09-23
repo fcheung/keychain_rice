@@ -16,7 +16,6 @@ class KeychainException : public std::exception{
     ~KeychainException() throw(){};
 };
 
-
 class Keychain{
 
   public:
@@ -40,5 +39,13 @@ class Keychain{
     void lock();
     void unlock(const Object password_or_nil);
     void destroy();
+
+    bool lock_on_sleep() const;
+    int  lock_interval() const;
+    bool set_lock_on_sleep(bool newValue);
+    int set_lock_interval(int newValue);
+  protected:
+    SecKeychainSettings settings() const;
+    void set_settings(SecKeychainSettings *new_settings);
 };
 #endif
