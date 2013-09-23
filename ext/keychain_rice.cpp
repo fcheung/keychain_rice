@@ -43,9 +43,9 @@ void Init_keychain_rice(){
         define_singleton_method("create",&Keychain::create,(Arg("path"), Arg("password")=Nil)).
         define_method("path",&Keychain::path).
         define_method("inspect",&Keychain::inspect).
-        define_method("lock",&Keychain::lock).
+        define_method("lock!",&Keychain::lock).
         define_method("delete",&Keychain::destroy).
-        define_method("unlock", &Keychain::unlock, (Arg("password")=Nil)).
+        define_method("unlock!", &Keychain::unlock, (Arg("password")=Nil)).
         define_method("status", &Keychain::status).
         define_method("lock_on_sleep?", &Keychain::lock_on_sleep).
         define_method("lock_on_sleep=", &Keychain::set_lock_on_sleep).
