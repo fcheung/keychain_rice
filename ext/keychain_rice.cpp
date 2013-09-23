@@ -6,7 +6,7 @@
 #include "keychain.hpp"
 #include "keychain_item.hpp"
 #include "rice/Builtin_Object.hpp"
-
+#include "cf_utils.hpp"
 using namespace Rice;
 
 VALUE rb_eKeychainAuthFailedError;
@@ -55,6 +55,12 @@ void Init_keychain_rice(){
 
   Data_Type<KeychainItem> rb_cKeychainItem = 
     define_class_under<KeychainItem>(rb_cKeychain,"Item");
+
+
+  define_module_under(rb_cKeychainItem, "Classes").
+                const_set("INTERNET",to_ruby((CFStringRef)kSecClassInternetPassword)).
+                const_set("GENERIC", to_ruby((CFStringRef)kSecClassGenericPassword));
+
 
   rb_eKeychainAuthFailedError = rb_const_get(rb_cKeychain.value(), rb_intern("AuthFailedError"));
   rb_eKeychainError           = rb_const_get(rb_cKeychain.value(), rb_intern("Error"));
