@@ -4,6 +4,7 @@
 #include "rice/String.hpp"
 #include "rice/Exception.hpp"
 #include "keychain.hpp"
+#include "keychain_item.hpp"
 #include "rice/Builtin_Object.hpp"
 
 using namespace Rice;
@@ -51,6 +52,9 @@ void Init_keychain_rice(){
         define_method("lock_on_sleep=", &Keychain::set_lock_on_sleep).
         define_method("lock_interval", &Keychain::lock_interval).
         define_method("lock_interval=", &Keychain::set_lock_interval);
+
+  Data_Type<KeychainItem> rb_cKeychainItem = 
+    define_class_under<KeychainItem>(rb_cKeychain,"Item");
 
   rb_eKeychainAuthFailedError = rb_const_get(rb_cKeychain.value(), rb_intern("AuthFailedError"));
   rb_eKeychainError           = rb_const_get(rb_cKeychain.value(), rb_intern("Error"));
