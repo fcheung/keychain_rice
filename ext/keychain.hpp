@@ -3,8 +3,9 @@
 #include <Security/Security.h>
 #include "rice/Class.hpp"
 #include "rice/String.hpp"
+#include "rice/Hash.hpp"
 #include "rice/Builtin_Object.hpp"
-
+#include "keychain_item.hpp"
 using namespace Rice;
 
 class KeychainException : public std::exception{
@@ -44,8 +45,15 @@ class Keychain{
     int  lock_interval() const;
     bool set_lock_on_sleep(bool newValue);
     int set_lock_interval(int newValue);
+    KeychainItem add_password(String kind, Object hash_or_nil);
+    static Object find(Symbol first_or_all, String kind, Object hash_or_nil);
+
+
+    static const Hash keychain_map();
   protected:
     SecKeychainSettings settings() const;
     void set_settings(SecKeychainSettings *new_settings);
+    static void map_ruby_options_to_cf_options(const Hash& options, CFMutableDictionaryRef attributes);
+
 };
 #endif

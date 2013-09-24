@@ -2,9 +2,10 @@
 #include "rice/String.hpp"
 
 #include "rice/Builtin_Object.hpp"
-
+#include "rice/Module.ipp"
+#include "cf_utils.hpp"
 using namespace Rice;
-
+extern Data_Type<Keychain> rb_cKeychain;
 void Keychain::CheckOSStatusOrRaise(OSStatus err){
   if(err != 0){
     CFStringRef description = SecCopyErrorMessageString(err, NULL);
@@ -154,3 +155,157 @@ void Keychain::set_settings(SecKeychainSettings *new_settings){
   OSStatus result = SecKeychainSetSettings(m_keychain, new_settings);
   CheckOSStatusOrRaise(result);
 }
+
+const Hash Keychain::keychain_map(){
+
+  if(!rb_cKeychain.const_defined("KEYCHAIN_MAP")){
+    Hash id_to_strings;
+    id_to_strings[Symbol("created_at")] = to_ruby((CFStringRef)kSecAttrCreationDate);
+    id_to_strings[Symbol("updated_at")] = to_ruby((CFStringRef)kSecAttrModificationDate);
+    id_to_strings[Symbol("description")] = to_ruby((CFStringRef)kSecAttrDescription);
+    id_to_strings[Symbol("comment")] = to_ruby((CFStringRef)kSecAttrComment);
+    id_to_strings[Symbol("account")] = to_ruby((CFStringRef)kSecAttrAccount);
+    id_to_strings[Symbol("service")] = to_ruby((CFStringRef)kSecAttrService);
+    id_to_strings[Symbol("server")] = to_ruby((CFStringRef)kSecAttrServer);
+    id_to_strings[Symbol("port")] = to_ruby((CFStringRef)kSecAttrPort);
+    id_to_strings[Symbol("security_domain")] = to_ruby((CFStringRef)kSecAttrSecurityDomain);
+    id_to_strings[Symbol("negative")] = to_ruby((CFStringRef)kSecAttrIsNegative);
+    id_to_strings[Symbol("invisible")] = to_ruby((CFStringRef)kSecAttrIsInvisible);
+    id_to_strings[Symbol("label")] = to_ruby((CFStringRef)kSecAttrLabel);
+    id_to_strings[Symbol("path")] = to_ruby((CFStringRef)kSecAttrPath);
+    id_to_strings[Symbol("protocol")] = to_ruby((CFStringRef)kSecAttrProtocol);
+    id_to_strings[Symbol("password")] = to_ruby((CFStringRef)kSecValueData);
+    id_to_strings[Symbol("klass")] = to_ruby((CFStringRef)kSecClass);
+    rb_cKeychain.const_set("KEYCHAIN_MAP", id_to_strings);
+  }
+  return rb_cKeychain.const_get("KEYCHAIN_MAP");
+}
+
+void Keychain::map_ruby_options_to_cf_options(const Hash& options, CFMutableDictionaryRef attributes)
+{
+  Hash ruby_options_to_cf_options = Keychain::keychain_map();
+
+  for( Hash::const_iterator iter = options.begin(); iter != options.end(); iter++){
+    Object value = iter->value;
+    Object key = ruby_options_to_cf_options[iter->key];
+    if(key.is_nil()) continue;
+
+    String string_key = key;
+
+    CFTypeRef cf_value = to_cf(value);
+    CFStringRef cf_key = rb_create_cf_string(string_key);
+    CFDictionarySetValue(attributes, cf_key, cf_value);
+    CFRelease(cf_value);
+    CFRelease(cf_key);
+  }
+}
+
+KeychainItem Keychain::add_password(String kind, Object hash_or_nil){
+
+  Hash options;
+  if(!hash_or_nil.is_nil()){
+    options = hash_or_nil;
+  }
+
+  if(!((Object)options[Symbol("password")]).is_nil())
+  {
+    String passworddata = String(options[Symbol("password")].value());
+    options[Symbol("password")]= passworddata.call("b");
+  }
+
+
+  CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  CFTypeRef cf_kind = rb_create_cf_string(kind);
+  CFDictionarySetValue(attributes, kSecClass, cf_kind);
+  CFRelease(cf_kind);
+  CFDictionarySetValue(attributes, kSecReturnAttributes, kCFBooleanTrue);
+  CFDictionarySetValue(attributes, kSecReturnRef, kCFBooleanTrue);
+  CFDictionarySetValue(attributes, kSecUseKeychain, m_keychain);
+
+  map_ruby_options_to_cf_options(options, attributes);
+  CFDictionaryRef result;
+
+
+  OSStatus status = SecItemAdd(attributes, (CFTypeRef*)&result);
+  CFRelease(attributes);
+  CheckOSStatusOrRaise(status);
+
+  KeychainItem item = KeychainItem(result);
+  CFRelease(result);
+  return item;
+
+
+}
+
+Object Keychain::find(Symbol first_or_all, String kind, Object hash_or_nil){
+  CFMutableDictionaryRef query = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+  CFDictionarySetValue(query, kSecReturnAttributes, kCFBooleanTrue);
+  CFDictionarySetValue(query, kSecReturnRef, kCFBooleanTrue);
+  
+
+  if(first_or_all.to_id().id() == rb_intern("all")){
+    CFDictionarySetValue(query, kSecMatchLimit, kSecMatchLimitAll);
+  }
+
+  CFTypeRef cf_kind = rb_create_cf_string(kind);
+  CFDictionarySetValue(query, kSecClass, cf_kind);
+  CFRelease(cf_kind);
+
+  if(!hash_or_nil.is_nil()){
+    Hash options = hash_or_nil;
+
+    if(!((Object)options[Symbol("keychains")]).is_nil()){
+      Array keychains_array = options[Symbol("keychains")].value();
+      CFMutableArrayRef searchArray = CFArrayCreateMutable(NULL, keychains_array.size(), &kCFTypeArrayCallBacks);
+      for(size_t index = 0; index < keychains_array.size(); index++){
+        CFArrayAppendValue(searchArray, from_ruby<Keychain>(keychains_array[index]).m_keychain);
+      }
+      CFDictionarySetValue(query, kSecMatchSearchList,searchArray);
+      CFRelease(searchArray);
+    }  
+
+    if(!((Object)options[Symbol("limit")]).is_nil()){
+      long c_limit = from_ruby<long>(options[Symbol("limit")]);
+      CFNumberRef cf_limit = CFNumberCreate(NULL, kCFNumberLongType, &c_limit);
+      CFDictionarySetValue(query, kSecMatchLimit, cf_limit);
+      CFRelease(cf_limit);
+    }
+
+    if(!((Object)options[Symbol("conditions")]).is_nil()){
+      Hash conditions = Hash(options[Symbol("conditions")]);
+      map_ruby_options_to_cf_options(conditions, query);
+    }
+  }
+  CFDictionaryRef result;
+
+  OSStatus status = SecItemCopyMatching(query, (CFTypeRef*)&result);
+  CFRelease(query);
+
+  Array keychain_items;
+
+  switch(status){
+    case errSecItemNotFound: 
+      break;
+    default:
+      CheckOSStatusOrRaise(status);
+      if(CFArrayGetTypeID() == CFGetTypeID(result)){
+        CFArrayRef result_array = (CFArrayRef)result;
+        for(CFIndex i = 0; i < CFArrayGetCount(result_array); i++){
+          keychain_items.push(KeychainItem((CFDictionaryRef)CFArrayGetValueAtIndex(result_array,i)));
+        }
+      }
+      else{
+        keychain_items.push(KeychainItem((CFDictionaryRef)result));
+      }
+      CFRelease(result);
+  }
+
+  if(first_or_all.to_id().id() == rb_intern("first")){
+    return keychain_items[0];
+  }
+  else{
+    return keychain_items;
+  }
+}
+
