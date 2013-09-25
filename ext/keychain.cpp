@@ -302,7 +302,10 @@ Object Keychain::find(Symbol first_or_all, String kind, Object hash_or_nil){
   }
 
   if(first_or_all.to_id().id() == rb_intern("first")){
-    return keychain_items[0];
+    if(keychain_items.size() > 0)
+      return keychain_items[0];
+    else
+      return Nil;
   }
   else{
     return keychain_items;

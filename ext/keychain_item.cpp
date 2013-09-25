@@ -193,3 +193,7 @@ Keychain KeychainItem::keychain() const{
   return keychain;
 }
 
+void KeychainItem::destroy(){
+  OSStatus result = SecKeychainItemDelete(m_keychain_item);
+  Keychain::CheckOSStatusOrRaise(result);
+}

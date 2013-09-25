@@ -136,7 +136,8 @@ void Init_keychain_rice(){
       define_method("invisible=",&KeychainItem::set_invisible).
       define_method("klass=",&KeychainItem::set_klass).
       define_method("password=",&KeychainItem::set_password).
-      define_method("keychain", &KeychainItem::keychain);
+      define_method("keychain", &KeychainItem::keychain).
+      define_method("delete", &KeychainItem::destroy);
 
 
 

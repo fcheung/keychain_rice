@@ -14,13 +14,13 @@ class KeychainItem{
     SecKeychainItemRef m_keychain_item;
     CFMutableDictionaryRef m_attributes;
     CFDataRef m_unsaved_password;
-    
+
     KeychainItem(SecKeychainItemRef keychain);
     KeychainItem(const KeychainItem& copy);
     KeychainItem(CFDictionaryRef data);
     ~KeychainItem(void);
 
-
+    void destroy();
     Keychain keychain() const;
     CFDateRef created_at() const;
     CFDateRef updated_at() const;
