@@ -99,6 +99,7 @@ void Init_keychain_rice(){
         define_method("lock_interval", &Keychain::lock_interval).
         define_method("lock_interval=", &Keychain::set_lock_interval).
         define_method("add_password",&Keychain::add_password,(Arg("kind"),Arg("options")=Nil)).
+        define_method("==", &Keychain::equals).
         define_singleton_method("find",&Keychain::find,(Arg("first_or_all"),Arg("kind"),Arg("options")=Nil));
 
   Data_Type<KeychainItem> rb_cKeychainItem = 

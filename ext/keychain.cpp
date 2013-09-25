@@ -309,3 +309,12 @@ Object Keychain::find(Symbol first_or_all, String kind, Object hash_or_nil){
   }
 }
 
+bool Keychain::equals(const Object other) const{
+  if(other.is_a(rb_cKeychain)){
+    Keychain other_keychain = from_ruby<Keychain>(other);
+    return CFEqual(m_keychain, other_keychain.m_keychain); 
+  }else{
+    return false;
+  }
+}
+

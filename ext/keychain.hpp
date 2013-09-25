@@ -50,6 +50,8 @@ class Keychain{
 
 
     static const Hash keychain_map();
+
+    bool equals(const Object other) const ;
   protected:
     SecKeychainSettings settings() const;
     void set_settings(SecKeychainSettings *new_settings);
