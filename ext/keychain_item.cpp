@@ -5,7 +5,7 @@
 using namespace Rice;
 
 
-KeychainItem::KeychainItem(SecKeychainItemRef keychain_item):m_attributes(NULL){
+KeychainItem::KeychainItem(SecKeychainItemRef keychain_item):m_attributes(NULL),m_unsaved_password(NULL){
   m_keychain_item = keychain_item;
   CFRetain(m_keychain_item);
 }
@@ -19,6 +19,10 @@ KeychainItem::KeychainItem(const KeychainItem& copy){
     m_attributes = NULL;
   }
   CFRetain(m_keychain_item);
+  m_unsaved_password = copy.m_unsaved_password;
+  if(m_unsaved_password){
+    CFRetain(m_unsaved_password);
+  }
 }
 
 KeychainItem::~KeychainItem(void){
@@ -26,9 +30,12 @@ KeychainItem::~KeychainItem(void){
   if(m_attributes){
     CFRelease(m_attributes);
   }
+  if(m_unsaved_password){
+    CFRelease(m_unsaved_password);
+  }
 }
 
-KeychainItem::KeychainItem(CFDictionaryRef dict){
+KeychainItem::KeychainItem(CFDictionaryRef dict): m_unsaved_password(NULL){
   m_keychain_item = (SecKeychainItemRef) CFDictionaryGetValue(dict, kSecValueRef);
   CFRetain(m_keychain_item);
   m_attributes = (CFMutableDictionaryRef)CFDictionaryCreateMutableCopy(NULL,CFDictionaryGetCount(dict), dict);
@@ -76,9 +83,6 @@ CFNumberRef KeychainItem::port() const {
 
 CFNumberRef KeychainItem::protocol() const {
   return (CFNumberRef)CFDictionaryGetValue(m_attributes, kSecAttrProtocol);
-}
-CFDataRef KeychainItem::password() const {
-  return (CFDataRef)CFDictionaryGetValue(m_attributes, kSecValueData);
 }
 CFStringRef KeychainItem::klass() const {
   return (CFStringRef)CFDictionaryGetValue(m_attributes, kSecClass);
@@ -155,15 +159,30 @@ void KeychainItem::set_protocol(SInt32 protocol){
   CFRelease(value);
 }
 void KeychainItem::set_password(String value){
-  CFDataRef data = rb_create_cf_data(value);
-  CFDictionarySetValue(m_attributes, kSecValueData, data);
-  CFRelease(data);
+  if(m_unsaved_password){CFRelease(m_unsaved_password);}
+  m_unsaved_password  = rb_create_cf_data(value);
 }
 void KeychainItem::set_klass(String r_value){
   CFStringRef value = rb_create_cf_string(r_value);
   CFDictionarySetValue(m_attributes, kSecClass, value);
   CFRelease(value);
 }
+
+CFDataRef KeychainItem::password() const {
+  if(m_unsaved_password){
+    return m_unsaved_password;
+  }else{
+    void *data;
+    UInt32 dataLength;
+    OSStatus result = SecKeychainItemCopyAttributesAndData(m_keychain_item, NULL , NULL, NULL, &dataLength, &data);
+    Keychain::CheckOSStatusOrRaise(result);
+
+    CFDataRef cf_data = CFDataCreate(NULL, (UInt8*)data, dataLength);
+    SecKeychainItemFreeAttributesAndData(NULL,data);
+    return cf_data;
+  }
+}
+
 
 Keychain KeychainItem::keychain() const{
   SecKeychainRef keychain_ref;

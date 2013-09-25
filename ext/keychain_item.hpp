@@ -13,7 +13,8 @@ class KeychainItem{
   public:
     SecKeychainItemRef m_keychain_item;
     CFMutableDictionaryRef m_attributes;
-
+    CFDataRef m_unsaved_password;
+    
     KeychainItem(SecKeychainItemRef keychain);
     KeychainItem(const KeychainItem& copy);
     KeychainItem(CFDictionaryRef data);
