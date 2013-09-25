@@ -182,7 +182,47 @@ CFDataRef KeychainItem::password() const {
     return cf_data;
   }
 }
+CFMutableDictionaryRef KeychainItem::sec_query_identifying_self() const{
+  CFMutableDictionaryRef query = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  CFArrayRef itemArray = CFArrayCreate(NULL, (const void**)&m_keychain_item, 1, &kCFTypeArrayCallBacks);
+  CFDictionarySetValue(query, kSecMatchItemList, itemArray);
+  CFRelease(itemArray);
+  return query;
+}
 
+
+CFStringRef KeychainItem::copy_class() const{
+  SecItemClass secItemClass;
+  SecKeychainItemCopyContent(m_keychain_item, &secItemClass, NULL, NULL, NULL);
+  secItemClass = CFSwapInt32HostToBig(secItemClass);
+  CFStringRef cfclass = CFStringCreateWithBytes(NULL, (UInt8*)&secItemClass, sizeof(secItemClass), kCFStringEncodingUTF8, false);
+  return cfclass;
+}
+void KeychainItem::save(){
+  CFMutableDictionaryRef query = sec_query_identifying_self();
+
+  CFMutableDictionaryRef attributes = NULL;
+  if(m_attributes){
+    attributes = CFDictionaryCreateMutableCopy(NULL, 0, m_attributes);
+  }else{
+    attributes = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  }
+  CFDictionaryRemoveValue(attributes, kSecValueRef);
+  CFDictionaryRemoveValue(attributes, kSecClass);
+  CFDictionaryRemoveValue(attributes, kSecAttrModificationDate);
+  CFDictionaryRemoveValue(attributes, kSecAttrCreationDate);
+  if(m_unsaved_password){
+    CFDictionarySetValue(attributes,kSecValueData,m_unsaved_password);
+  }
+  CFStringRef cfclass = copy_class();
+  CFDictionarySetValue(query, kSecClass, cfclass);
+  CFRelease(cfclass);
+  OSStatus result = SecItemUpdate(query, attributes);
+
+   CFRelease(query);
+   CFRelease(attributes);
+  Keychain::CheckOSStatusOrRaise(result);
+}
 
 Keychain KeychainItem::keychain() const{
   SecKeychainRef keychain_ref;

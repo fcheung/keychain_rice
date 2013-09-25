@@ -29,9 +29,9 @@ class Keychain{
     ~Keychain(void);
 
     static void CheckOSStatusOrRaise(OSStatus err);
-    static Keychain open(String path);
+    static Keychain open(const String path);
     static Keychain default_keychain();
-    static Keychain create(const char *path, const Object password_or_nil);
+    static Keychain create(const String path, const Object password_or_nil);
 
     String path() const;
     SecKeychainStatus status() const;

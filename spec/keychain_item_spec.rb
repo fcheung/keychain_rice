@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Keychain::Item do 
   before(:each) do
-    @keychain = Keychain.create(File.join(Dir.tmpdir, "keychain_spec_#{Time.now.to_i}_#{Time.now.usec}_#{rand(1000)}.keychain"), 'pass')
+    @keychain = Keychain.create(File.join(Dir.tmpdir, "keychain_spec_#{Time.now.to_i}_#{Time.now.usec}_#{rand(1000)}.keychain").to_s, 'pass')
     @keychain.generic_passwords.create :service => 'some-service', :account => 'some-account', :password => 'some-password'
   end
 

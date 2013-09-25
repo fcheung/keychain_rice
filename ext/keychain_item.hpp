@@ -21,6 +21,7 @@ class KeychainItem{
     ~KeychainItem(void);
 
     void destroy();
+    void save();
     Keychain keychain() const;
     CFDateRef created_at() const;
     CFDateRef updated_at() const;
@@ -55,6 +56,10 @@ class KeychainItem{
     void set_protocol(SInt32);
     void set_port(int);
     void set_klass(String);
+
+  protected:
+    CFMutableDictionaryRef sec_query_identifying_self() const;
+    CFStringRef copy_class() const;
 
 };
 #endif

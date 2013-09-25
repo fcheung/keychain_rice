@@ -110,9 +110,4 @@ end
 
 require 'keychain_rice/keychain_rice'
 
-class Keychain::Item
-  def password=(new_password)
-    @unsaved_password = new_password
-  end
-end
 

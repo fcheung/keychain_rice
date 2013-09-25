@@ -39,17 +39,18 @@ Keychain::Keychain(const char *path, const Object password_or_nil){
   CheckOSStatusOrRaise(result);
 }
 
-Keychain Keychain::create(const char *path, const Object password_or_nil){
+Keychain Keychain::create(const String path, const Object password_or_nil){
   SecKeychainRef keychain_ref=NULL;
   OSStatus result;
   if(password_or_nil.is_nil()){
-    result = SecKeychainCreate(path, 0, NULL, true,NULL,&keychain_ref);
+    result = SecKeychainCreate(path.c_str(), 0, NULL, true,NULL,&keychain_ref);
   }else{
     String password = password_or_nil;
-    result = SecKeychainCreate(path, (UInt32)password.length(), password.c_str(),false,NULL,&keychain_ref);
+    result = SecKeychainCreate(path.c_str(), (UInt32)password.length(), password.c_str(),false,NULL,&keychain_ref);
   }
   CheckOSStatusOrRaise(result);
   Keychain keychain = Keychain(keychain_ref);
+
   CFRelease(keychain_ref);
   return keychain;
 }

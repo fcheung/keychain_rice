@@ -39,6 +39,10 @@ static void handle_type_exception(TypeException const &exception){
   throw Exception(rb_eRuntimeError, "Couldn't convert type %s",exception.m_message.c_str());
 }
 
+static void handle_std_exception(std::exception const &exception){
+  throw Exception(rb_eRuntimeError, "caught std::exception %s",exception.what());
+}
+
 static void build_protocols(void){
   Module protocols = define_module_under(rb_cKeychain, "Protocols");
   protocols.const_set("FTP", to_ruby((UInt32)kSecProtocolTypeFTP       ));
@@ -137,7 +141,8 @@ void Init_keychain_rice(){
       define_method("klass=",&KeychainItem::set_klass).
       define_method("password=",&KeychainItem::set_password).
       define_method("keychain", &KeychainItem::keychain).
-      define_method("delete", &KeychainItem::destroy);
+      define_method("delete", &KeychainItem::destroy).
+      define_method("save!", &KeychainItem::save);
 
 
 
