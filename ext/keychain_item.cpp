@@ -1,6 +1,7 @@
 #include "keychain_item.hpp"
 #include "cf_utils.hpp"
 #include "rice/Hash.hpp"
+#include "keychain.hpp"
 using namespace Rice;
 
 
@@ -162,5 +163,14 @@ void KeychainItem::set_klass(String r_value){
   CFStringRef value = rb_create_cf_string(r_value);
   CFDictionarySetValue(m_attributes, kSecClass, value);
   CFRelease(value);
+}
+
+Keychain KeychainItem::keychain() const{
+  SecKeychainRef keychain_ref;
+  OSStatus result = SecKeychainItemCopyKeychain(m_keychain_item, &keychain_ref);
+  Keychain::CheckOSStatusOrRaise(result);
+  Keychain keychain = Keychain(keychain_ref);
+  CFRelease(keychain_ref);
+  return keychain;
 }
 

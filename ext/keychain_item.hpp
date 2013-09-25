@@ -6,6 +6,7 @@
 
 using namespace Rice;
 
+class Keychain;
 
 class KeychainItem{
 
@@ -19,6 +20,7 @@ class KeychainItem{
     ~KeychainItem(void);
 
 
+    Keychain keychain() const;
     CFDateRef created_at() const;
     CFDateRef updated_at() const;
     CFStringRef description() const;
