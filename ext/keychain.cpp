@@ -9,13 +9,13 @@ extern Data_Type<Keychain> rb_cKeychain;
 void Keychain::CheckOSStatusOrRaise(OSStatus err){
   if(err != 0){
     CFStringRef description = SecCopyErrorMessageString(err, NULL);
-
     CFIndex bufferSize = CFStringGetMaximumSizeForEncoding(CFStringGetLength(description), kCFStringEncodingUTF8);
     char *buffer = (char*)malloc(bufferSize + 1);
     CFStringGetCString(description, buffer, bufferSize + 1, kCFStringEncodingUTF8);
     CFRelease(description);
-
-    throw KeychainException(buffer, err);
+    std::string message = std::string(buffer);
+    free(buffer);
+    throw KeychainException(message, err);
   }
 }
 
