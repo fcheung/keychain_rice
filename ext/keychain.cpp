@@ -107,12 +107,12 @@ void Keychain::lock(){
 
 void Keychain::unlock(const Object password_or_nil){
   OSStatus result = 0;
-  if(password_or_nil.is_nil()){
-    result = SecKeychainUnlock(m_keychain,0,NULL,false);
-  }
-  else{
+  if(password_or_nil.test()){
     String password = password_or_nil.call("encode","UTF-8");
     result = SecKeychainUnlock(m_keychain,(UInt32)password.length(), (UInt8*)password.c_str(),true);
+  }
+  else{
+    result = SecKeychainUnlock(m_keychain,0,NULL,false);
   }
   CheckOSStatusOrRaise(result);
 }
